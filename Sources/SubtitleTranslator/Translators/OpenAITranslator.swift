@@ -31,7 +31,7 @@ struct OpenAITranslator: LLMTranslator {
         request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
 
         let requestBody: [String: Any] = [
-            "model": "gpt-4o",
+            "model": "gpt-4o-mini",
             "messages": messages
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
