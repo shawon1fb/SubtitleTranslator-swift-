@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SubtitleEntry: Identifiable, Hashable {
+struct SubtitleEntry:Codable, Identifiable, Hashable {
     let index: Int
     let timeCode: String
     let text: String

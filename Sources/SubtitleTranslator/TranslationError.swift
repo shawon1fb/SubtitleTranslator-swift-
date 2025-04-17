@@ -14,6 +14,7 @@ enum TranslationError: Error {
     case fileNotFound
     case fileWriteError
     case batchTranslationMismatch(expected: Int, received: Int)
+    case custom(String)
 }
 struct MissingAPIKeyError: Error, CustomStringConvertible {
     let provider: String
