@@ -8,7 +8,7 @@
 import Foundation
 class SubtitleTranslator {
     private let translator: LLMTranslator
-    private let batchSize = 5
+    private let batchSize = 80
     
     init(translator: LLMTranslator) {
         self.translator = translator
