@@ -20,8 +20,8 @@ struct TranslateCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Input .srt file path")
     var input: String
     
-    @Option(name: .shortAndLong, help: "Output .srt file path")
-    var output: String
+    @Option(name: .shortAndLong, help: "Output .srt file path (optional, defaults to [input-name].bn.srt)")
+    var output: String?
     
     @Option(name: .shortAndLong, help: "LLM provider (claude, chatgpt, ollama, deepseek)")
     var llm: String
@@ -54,11 +54,11 @@ struct TranslateCommand: AsyncParsableCommand {
         case "ollama":
             translator = OllamaTranslator(endpoint: ollamaEndpoint, model: ollamaModel)
         case "deepseek":
-//            guard let apiKey = apiKey else {
-//                fatalError("API key is required for DeepSeek")
-//            }
+            guard let apiKey = apiKey else {
+                fatalError("API key is required for DeepSeek")
+            }
            
-            translator = DeepSeekTranslator(apiKey: apiKey ?? "sk_gtZWT71UYEtG-7eM2OBtnZXGG5_XdLYNRfPEeiqMmZ8")
+            translator = DeepSeekTranslator(apiKey: apiKey )
         default:
             fatalError("Unsupported LLM provider: \(llm). Supported providers: claude, chatgpt, ollama, deepseek")
         }
@@ -82,10 +82,22 @@ struct TranslateCommand: AsyncParsableCommand {
         // Generate output SRT
         let outputContent = subtitleTranslator.generateSrt(entries: translatedEntries)
         
+        // Determine the output file path
+        let outputPath: String
+        if let outputSpecified = output {
+            outputPath = outputSpecified
+        } else {
+            // Get the input file name without extension
+            let inputURL = URL(fileURLWithPath: input)
+            let fileName = inputURL.deletingPathExtension().lastPathComponent
+            let directory = inputURL.deletingLastPathComponent().path
+            outputPath = "\(directory)/\(fileName).bn.srt"
+        }
+        
         // Write to output file
         do {
-            try outputContent.write(toFile: output, atomically: true, encoding: .utf8)
-            print("Translation complete! Output written to \(output)")
+            try outputContent.write(toFile: outputPath, atomically: true, encoding: .utf8)
+            print("Translation complete! Output written to \(outputPath)")
         } catch {
             throw TranslationError.fileWriteError
         }
