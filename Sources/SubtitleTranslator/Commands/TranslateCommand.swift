@@ -24,43 +24,51 @@ struct TranslateCommand: AsyncParsableCommand {
     var output: String?
     
     @Option(name: .shortAndLong, help: "LLM provider (claude, chatgpt, ollama, deepseek)")
-    var llm: String
+    var llm: String?
     
     @Option(name: .shortAndLong, help: "API key for the selected LLM provider")
     var apiKey: String?
     
     @Option(name: .long, help: "Ollama API endpoint (default: http://localhost:11434)")
-    var ollamaEndpoint: String = "http://localhost:11434"
+    var ollamaEndpoint: String?
     
     @Option(name: .long, help: "Ollama model to use (default: llama3)")
-    var ollamaModel: String = "llama3.2:latest"
+    var ollamaModel: String?
     
     mutating func run() async throws {
+        // Load configuration
+        let configManager = ConfigurationManager()
+        
+        // Apply configuration values as defaults
+        let llmProvider = llm ?? configManager.getValue(key: "llm") ?? "ollama"
+        let apiKeyValue = apiKey ?? configManager.getValue(key: "apiKey")
+        let ollamaEndpointValue = ollamaEndpoint ?? configManager.getValue(key: "ollamaEndpoint") ?? "http://localhost:11434"
+        let ollamaModelValue = ollamaModel ?? configManager.getValue(key: "ollamaModel") ?? "llama3.2:latest"
+        
         let translator: LLMTranslator
         
-        print("started")
+        print("Started translation with \(llmProvider)")
         
-        switch llm.lowercased() {
+        switch llmProvider.lowercased() {
         case "claude":
-            guard let apiKey = apiKey else {
-                fatalError("API key is required for Claude")
+            guard let apiKey = apiKeyValue else {
+                fatalError("API key is required for Claude. Set it with --api-key or using the config command.")
             }
             translator = ClaudeTranslator(apiKey: apiKey)
         case "chatgpt":
-            guard let apiKey = apiKey else {
-                fatalError("API key is required for ChatGPT")
+            guard let apiKey = apiKeyValue else {
+                fatalError("API key is required for ChatGPT. Set it with --api-key or using the config command.")
             }
             translator = OpenAITranslator(apiKey: apiKey)
         case "ollama":
-            translator = OllamaTranslator(endpoint: ollamaEndpoint, model: ollamaModel)
+            translator = OllamaTranslator(endpoint: ollamaEndpointValue, model: ollamaModelValue)
         case "deepseek":
-            guard let apiKey = apiKey else {
-                fatalError("API key is required for DeepSeek")
+            guard let apiKey = apiKeyValue else {
+                fatalError("API key is required for DeepSeek. Set it with --api-key or using the config command.")
             }
-           
-            translator = DeepSeekTranslator(apiKey: apiKey )
+            translator = DeepSeekTranslator(apiKey: apiKey)
         default:
-            fatalError("Unsupported LLM provider: \(llm). Supported providers: claude, chatgpt, ollama, deepseek")
+            fatalError("Unsupported LLM provider: \(llmProvider). Supported providers: claude, chatgpt, ollama, deepseek")
         }
         
         print("Starting translation using \(translator.name)...")
@@ -90,12 +98,22 @@ struct TranslateCommand: AsyncParsableCommand {
             // Get the input file name without extension
             let inputURL = URL(fileURLWithPath: input)
             let fileName = inputURL.deletingPathExtension().lastPathComponent
-            let directory = inputURL.deletingLastPathComponent().path
-            outputPath = "\(directory)/\(fileName).bn.srt"
+            
+            // Check if there's a default output directory configured
+            if let outputDir = configManager.getValue(key: "outputDir") {
+                outputPath = "\(outputDir)/\(fileName).bn.srt"
+            } else {
+                let directory = inputURL.deletingLastPathComponent().path
+                outputPath = "\(directory)/\(fileName).bn.srt"
+            }
         }
         
         // Write to output file
         do {
+            // Create directory if it doesn't exist
+            let outputURL = URL(fileURLWithPath: outputPath)
+            try FileManager.default.createDirectory(at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            
             try outputContent.write(toFile: outputPath, atomically: true, encoding: .utf8)
             print("Translation complete! Output written to \(outputPath)")
         } catch {

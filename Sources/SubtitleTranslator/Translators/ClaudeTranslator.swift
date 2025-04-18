@@ -5,7 +5,6 @@
 //  Created by Shahanul Haque on 4/17/25.
 //
 import Foundation
-
 struct ClaudeTranslator: LLMTranslator {
     var name: String = "Claude"
     private let apiKey: String
@@ -20,15 +19,15 @@ struct ClaudeTranslator: LLMTranslator {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
-        // (Make sure to set anthropic-version to the correct API version string.)
-
+        request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
 
         let requestBody: [String: Any] = [
-            "model": "claude-3-7-sonnet-20250219",
-            "max_tokens": 1000,
+//            "model": "claude-3-7-sonnet-20250219",
+            "model": "claude-3-haiku-20240307",
+            "max_tokens": 4000,
+            "system": systemPrompt,
             "messages": [
-                ["role": "system", "content": systemPrompt],
-                ["role": "user",   "content": text]
+                ["role": "user", "content": text]
             ]
         ]
 
@@ -36,14 +35,13 @@ struct ClaudeTranslator: LLMTranslator {
         let (data, _) = try await URLSession.shared.data(for: request)
         let responseJSON = try JSONSerialization.jsonObject(with: data) as! [String: Any]
 
-        // Claude returns a list of messages under "messages"
-        if let messages = responseJSON["messages"] as? [[String: Any]],
-           let last = messages.last,
-           let content = last["content"] as? String {
-            return content
+        // Claude returns the content in the response object
+        if let content = responseJSON["content"] as? [[String: Any]],
+           let firstContent = content.first,
+           let text = firstContent["text"] as? String {
+            return text
         } else {
             throw TranslationError.apiResponseParsingError
         }
     }
 }
-

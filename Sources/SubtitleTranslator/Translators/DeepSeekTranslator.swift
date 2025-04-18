@@ -27,6 +27,7 @@ struct DeepSeekTranslator: LLMTranslator {
         
         let requestBody: [String: Any] = [
 //            "model": "deepseek-chat",
+//            "model": "deepseek/deepseek-v3-0324",
             "model": "deepseek/deepseek-v3-0324",
             "messages": [
                 [
