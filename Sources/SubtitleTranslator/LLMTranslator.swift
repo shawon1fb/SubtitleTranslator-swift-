@@ -20,7 +20,7 @@ Your task is to translate the following English subtitles (in SRT format) into B
 • Only replace the English text with its Bangla equivalent—do not alter times or sequence numbers.
 • Keep line breaks as in the original.
 • Ensure proper Bangla spelling and grammar.
-• Keep each segment separated by "---" and maintain the same order.
+• Keep each segment separated by "---" and maintain the same order.its vary important. 
 
 Please output only the translated SRT content.
 """
